@@ -10,7 +10,7 @@ from __future__ import division
 import numpy as np
 from scipy import linalg
 
-from .qb import rqb
+from .qb import rqb, rqb_block
 from .utils import conjugate_transpose
 
 _VALID_DTYPES = (np.float32, np.float64, np.complex64, np.complex128)
@@ -156,7 +156,7 @@ def dmd(A, rank=None, dt=1, modes='exact', return_amplitudes=False,
     return result
 
 
-def rdmd(A, rank, dt=1, oversample=10, n_subspace=2, return_amplitudes=False,
+def rdmd(A, rank, dt=1, oversample=10, n_subspace=2, n_blocks=1, return_amplitudes=False,
          return_vandermonde=False, order=True, random_state=None):
     """Randomized Dynamic Mode Decomposition.
 
@@ -189,6 +189,11 @@ def rdmd(A, rank, dt=1, oversample=10, n_subspace=2, return_amplitudes=False,
     n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
+
+    n_blocks : integer, default: 2.
+        Paramter to control in how many blocks of columns the input matrix 
+        should be split. A larger number requires less fast memory, while it 
+        leads to a higher computational time. 
 
     return_amplitudes : bool `{True, False}`
         True: return amplitudes in addition to dynamic modes.
@@ -227,7 +232,7 @@ def rdmd(A, rank, dt=1, oversample=10, n_subspace=2, return_amplitudes=False,
     (available at `arXiv <https://arxiv.org/abs/1609.00048>`_).
     """
     # Compute QB decomposition
-    Q, B = rqb(A, rank, oversample=oversample, n_subspace=n_subspace, random_state=random_state)
+    Q, B = rqb_block(A, rank, oversample=oversample, n_subspace=n_subspace, n_blocks=n_blocks, random_state=random_state)
 
     # only difference is we need to premultiply F from dmd
     # vandermonde is basically already computed

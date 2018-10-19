@@ -10,7 +10,7 @@ from __future__ import division
 import numpy as np
 from scipy import linalg
 
-from .qb import rqb
+from .qb import rqb, rqb_block
 from .utils import conjugate_transpose
 
 _VALID_MODES = ('row', 'column')
@@ -107,7 +107,7 @@ def interp_decomp(A, rank, mode='column', index_set=False):
     return conjugate_transpose(V), conjugate_transpose(C)
 
 
-def rinterp_decomp(A, rank, oversample=10, n_subspace=2, mode='column',
+def rinterp_decomp(A, rank, oversample=10, n_subspace=2, n_blocks=1, mode='column',
                    index_set=False, random_state=None):
     """Randomized interpolative decomposition (rID).
 
@@ -142,6 +142,11 @@ def rinterp_decomp(A, rank, oversample=10, n_subspace=2, mode='column',
     n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
+
+    n_blocks : integer, default: 1.
+        Paramter to control in how many blocks of columns the input matrix 
+        should be split. A larger number requires less fast memory, while it 
+        leads to a higher computational time. 
 
     mode: str `{'column', 'row'}`, default: `mode='column'`.
         'column' : Column ID.
@@ -190,7 +195,7 @@ def rinterp_decomp(A, rank, oversample=10, n_subspace=2, mode='column',
         A = conjugate_transpose(A)
 
     # compute QB factorization
-    Q, B = rqb(A, rank, oversample=oversample, n_subspace=n_subspace, random_state=random_state)
+    Q, B = rqb_block(A, rank, oversample=oversample, n_subspace=n_subspace, n_blocks=n_blocks, random_state=random_state)
 
     # Deterministic ID
     J, V = interp_decomp(B, rank, mode='column', index_set=True)

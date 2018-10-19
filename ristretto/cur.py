@@ -77,7 +77,7 @@ def cur(A, rank=None, index_set=False):
     return C, U, R
 
 
-def rcur(A, rank, oversample=10, n_subspace=2, index_set=False, random_state=None):
+def rcur(A, rank, oversample=10, n_subspace=2, n_blocks=1, index_set=False, random_state=None):
     """Randomized CUR decomposition.
 
     Randomized algorithm for computing the approximate low-rank CUR
@@ -109,6 +109,11 @@ def rcur(A, rank, oversample=10, n_subspace=2, index_set=False, random_state=Non
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
 
+    n_blocks : integer, default: 1.
+        Paramter to control in how many blocks of columns the input matrix 
+        should be split. A larger number requires less fast memory, while it 
+        leads to a higher computational time. 
+
     index_set: str `{'True', 'False'}`, default: `index_set='False'`.
         'True' : Return column/row index set instead of `C` and `R`.
 
@@ -139,14 +144,14 @@ def rcur(A, rank, oversample=10, n_subspace=2, index_set=False, random_state=Non
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
     """
     # Compute column ID
-    J, V = rinterp_decomp(A, rank, oversample=oversample, n_subspace=n_subspace,
+    J, V = rinterp_decomp(A, rank, oversample=oversample, n_subspace=n_subspace, n_blocks=n_blocks,
                           mode='column', index_set=True, random_state=random_state)
 
     # Select column subset
     C = A[:, J]
 
     # Compute row ID of C
-    Z, I = rinterp_decomp(A, rank, oversample=oversample, n_subspace=n_subspace,
+    Z, I = rinterp_decomp(A, rank, oversample=oversample, n_subspace=n_subspace, n_blocks=n_blocks,
                           mode='row', index_set=True, random_state=random_state)
 
     # Select row subset

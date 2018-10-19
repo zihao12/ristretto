@@ -13,6 +13,8 @@ from scipy import linalg
 from .externals.cdnmf_fast import _update_cdnmf_fast as _fhals_update_shuffle
 from .externals.nmf import _initialize_nmf
 
+from .qb import rqb, rqb_block
+
 _VALID_DTYPES = (np.float32, np.float64)
 
 
@@ -184,8 +186,8 @@ def nmf(A, rank, init='nndsvd', shuffle=False,
     return W, Ht.T
 
 
-def rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
-         l2_reg_H=0.0, l2_reg_W=0.0, l1_reg_H=0.0, l1_reg_W=0.0,
+def rnmf(A, rank, oversample=20, n_subspace=2, n_blocks=1, init='nndsvd', 
+	shuffle=False, l2_reg_H=0.0, l2_reg_W=0.0, l1_reg_H=0.0, l1_reg_W=0.0,
          tol=1e-5, maxiter=200, random_state=None, verbose=False):
     """
     Randomized Nonnegative Matrix Factorization.
@@ -216,6 +218,11 @@ def rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
     n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
+
+    n_blocks : integer, default: 1.
+        Paramter to control in how many blocks of columns the input matrix 
+        should be split. A larger number requires less fast memory, while it 
+        leads to a higher computational time. 
 
     init :  'random' | 'nndsvd' | 'nndsvda' | 'nndsvdar'
         Method used to initialize the procedure. Default: 'nndsvd'.
@@ -329,29 +336,16 @@ def rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Compute QB decomposition
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Build sample matrix Y : Y = A * Omega, where Omega is a random test matrix
-    Omega = rns.rand(n, rank+oversample).astype(A.dtype)
-    Y = A.dot(Omega)
-    del Omega
+    # Compute QB decomposition
+    Q, B = rqb_block(A, rank, oversample=oversample, n_subspace=n_subspace,
+               n_blocks=n_blocks, random_state=random_state)
 
-    #If n_subspace > 0 perfrom n_subspace subspace iterations
-    for i in range(n_subspace):
-        Y , _ = linalg.qr(Y, mode='economic', check_finite=False, overwrite_a=True)
-        Z , _ = linalg.qr(A.T.dot(Y), mode='economic', check_finite=False, overwrite_a=True)
-        Y = A.dot(Z)
-    del Z
-
-    #Orthogonalize Y using economic QR decomposition: Y = QR
-    Q , _ = linalg.qr( Y,  mode='economic', check_finite=False, overwrite_a=True)
-
-    #Project input data to low-dimensional space
-    B = Q.T.dot(A)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Initialization methods for factor matrices W and H
     # 'normal': nonnegative standard normal random init
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    W, H = _initialize_nmf(A, rank, init=init, eps=1e-6, random_state=rns)
+    W, H = _initialize_nmf(A, rank, init=init, eps=1e-6, n_blocks=n_blocks, random_state=rns)
     Ht = np.array(H.T, order='C')
     W_tilde = Q.T.dot(W)
     del A

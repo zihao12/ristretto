@@ -12,11 +12,11 @@ import numpy as np
 from scipy import linalg
 from scipy import sparse
 
-from .qb import rqb
+from .qb import rqb, rqb_block
 from .utils import conjugate_transpose
 
 
-def rsvd(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
+def rsvd(A, rank, oversample=10, n_subspace=2, n_blocks=1, sparse=False, random_state=None):
     """Randomized Singular Value Decomposition.
 
     Randomized algorithm for computing the approximate low-rank singular value
@@ -46,6 +46,11 @@ def rsvd(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
     n_subspace : integer, default: 2.
         Parameter to control number of subspace iterations. Increasing this
         parameter may improve numerical accuracy.
+
+    n_blocks : integer, default: 1.
+        Paramter to control in how many blocks of columns the input matrix 
+        should be split. A larger number requires less fast memory, while it 
+        leads to a higher computational time. 
 
     sparse : boolean, optional (default: False)
         If sparse == True, perform compressed rsvd.
@@ -98,8 +103,8 @@ def rsvd(A, rank, oversample=10, n_subspace=2, sparse=False, random_state=None):
         flipped = True
 
     # Compute QB decomposition
-    Q, B = rqb(A, rank, oversample=oversample, n_subspace=n_subspace,
-               sparse=sparse, random_state=random_state)
+    Q, B = rqb_block(A, rank, oversample=oversample, n_subspace=n_subspace,
+               n_blocks=n_blocks, sparse=sparse, random_state=random_state)
 
     # Compute SVD
     U, s, Vt = linalg.svd(B, compute_uv=True, full_matrices=False,

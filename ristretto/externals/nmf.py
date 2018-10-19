@@ -25,7 +25,7 @@ def norm(x):
     return sqrt(linalg.norm(x))
 
 
-def _initialize_nmf(X, n_components, init=None, eps=1e-6,
+def _initialize_nmf(X, n_components, init=None, eps=1e-6, n_blocks=1,
                     random_state=None):
     """Algorithms for NMF initialization.
 
@@ -62,6 +62,11 @@ def _initialize_nmf(X, n_components, init=None, eps=1e-6,
 
     eps : float
         Truncate all values less then this in output to zero.
+
+    n_blocks : integer, default: 1.
+        Paramter to control in how many blocks of columns the input matrix 
+        should be split. A larger number requires less fast memory, while it 
+        leads to a higher computational time. 
 
     random_state : int, RandomState instance or None, optional, default: None
         If int, random_state is the seed used by the random number generator;
@@ -109,7 +114,7 @@ def _initialize_nmf(X, n_components, init=None, eps=1e-6,
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # NOTE: use our randomized_svd instead of scikit-learn
     #U, S, V = randomized_svd(X, n_components, random_state=random_state)
-    U, S, V = rsvd(X, n_components)
+    U, S, V = rsvd(X, n_components, n_blocks=n_blocks)
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     W, H = np.zeros(U.shape), np.zeros(V.shape)
 
