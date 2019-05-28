@@ -305,9 +305,9 @@ def compute_rnmf(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=Fa
         m, n = A.shape
         flipped = True
 
-    if A.dtype not in _VALID_DTYPES:
-        raise ValueError('A.dtype must be one of %s, not %s'
-                         % (' '.join(_VALID_DTYPES), A.dtype))
+    # if A.dtype not in _VALID_DTYPES:
+    #     raise ValueError('A.dtype must be one of %s, not %s'
+    #                      % (' '.join(_VALID_DTYPES), A.dtype))
 
     if np.any(A < 0):
         raise ValueError("Input matrix with nonnegative elements is required.")
