@@ -11782,17 +11782,27 @@ div#notebook {
 <li>It seems that we can directly use $A \approx QB$ in the HALS update formula (equation (14) (15) in the paper) and avoid computation of $O(np)$</li>
 </ul>
 <ul>
-<li><p>I did a naive implementation of it and compare it with the author's algorithms. Below, their HALS algorithm is called <code>nmf</code>, and their randomized + HALS is called <code>rnmf</code>. My naive implementation is called <code>rnmf2</code>. (Note that they use <code>_update_cdnmf_fast</code> from sklearn for hals, while I use my naive function).</p>
-</li>
-<li><p>Code is <a href="https://github.com/zihao12/ristretto/blob/master/ristretto/nmf.py">https://github.com/zihao12/ristretto/blob/master/ristretto/nmf.py</a></p>
-</li>
+<li>I did a naive implementation of it and compare it with the author's algorithms. Below, their HALS algorithm is called <code>nmf</code>, and their randomized + HALS is called <code>rnmf</code>. My naive implementation is called <code>rnmf2</code>. (Note that they use <code>_update_cdnmf_fast</code> from sklearn for hals, while I use my naive function). </li>
 </ul>
-<h2 id="Result:">Result:<a class="anchor-link" href="#Result:">&#182;</a></h2><ul>
-<li><p>Speed is as expected. Althouth <code>rnmf2</code> is slightly slower than <code>rmnf</code>, they are both much faster than <code>nmf</code>. It is probably due to implementation details</p>
-</li>
-<li><p>It is a bit worrying that <code>rnmf2</code> lags behind in loss (I have tried with data of different sizes, and it is always <code>rnmf2</code> lags behind <code>rnmf</code>,which is behind <code>nmf</code>)</p>
-</li>
+<ul>
+<li>The flop counts for <code>rnmf2</code> and <code>rnmf</code> are comparable. Both of order $O(k(n+p)) + O(d(n+p))$ for update of one column of W (or row of H). (in fact <code>rnmf</code> takes one more $dp$ multiplication operations). </li>
 </ul>
+<ul>
+<li>Code is <a href="https://github.com/zihao12/ristretto/blob/master/ristretto/nmf.py">https://github.com/zihao12/ristretto/blob/master/ristretto/nmf.py</a></li>
+</ul>
+<h2 id="Result:">Result:<a class="anchor-link" href="#Result:">&#182;</a></h2>
+<pre><code>txt
+method          niter           oversample              loss                    time
+oracle                                                  739609772
+nmf             200                                     738505818               118
+rnmf            200             20                      738516117               8.71
+rnmf2           200             20                      738564922               8.52
+rnmf            2000            20                      738472892               12.28
+
+rnmf            2000            20                      738472892               12.28
+rnmf2           2000            20                      738471982               11.73</code></pre>
+<p>So the <code>rnmf2</code> and <code>rnmf</code> get similar performance. In fact, <code>rnmf2</code> is even faster than <code>rnmf</code> a bit.</p>
+<p>Below are my code for the experiment.</p>
 
 </div>
 </div>
@@ -11859,7 +11869,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="nmf">nmf<a class="anchor-link" href="#nmf">&#182;</a></h2>
+<h2 id="Experiments">Experiments<a class="anchor-link" href="#Experiments">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -11868,9 +11878,10 @@ div#notebook {
 <div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;nmf&quot;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">niter</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;nmf niter=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">niter</span><span class="p">))</span>
 <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="p">(</span><span class="n">W_nmf</span><span class="p">,</span><span class="n">H_nmf</span><span class="p">)</span> <span class="o">=</span> <span class="n">nmf</span><span class="o">.</span><span class="n">compute_nmf</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span><span class="n">rank</span> <span class="o">=</span> <span class="n">K</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+<span class="p">(</span><span class="n">W_nmf</span><span class="p">,</span><span class="n">H_nmf</span><span class="p">)</span> <span class="o">=</span> <span class="n">nmf</span><span class="o">.</span><span class="n">compute_nmf</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span><span class="n">rank</span> <span class="o">=</span> <span class="n">K</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="n">niter</span><span class="p">)</span>
 <span class="n">runtime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;runtime: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">runtime</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;loss: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nmf</span><span class="o">.</span><span class="n">cost</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">W_nmf</span><span class="p">,</span><span class="n">H_nmf</span><span class="p">)))</span>
@@ -11890,8 +11901,8 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>nmf
-runtime: 119.73408222198486
+<pre>nmf niter=200
+runtime: 118.45250988006592
 loss: 738505818.5604401
 </pre>
 </div>
@@ -11906,9 +11917,12 @@ loss: 738505818.5604401
 <div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;rnmf&quot;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">niter</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">oversample</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;rnmf iter=</span><span class="si">{}</span><span class="s2">; oversample=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">niter</span><span class="p">,</span> <span class="n">oversample</span><span class="p">))</span>
 <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="p">(</span><span class="n">W_rnmf</span><span class="p">,</span><span class="n">H_rnmf</span><span class="p">)</span> <span class="o">=</span> <span class="n">nmf</span><span class="o">.</span><span class="n">compute_rnmf</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span><span class="n">rank</span> <span class="o">=</span> <span class="n">K</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="p">(</span><span class="n">W_rnmf</span><span class="p">,</span><span class="n">H_rnmf</span><span class="p">)</span> <span class="o">=</span> <span class="n">nmf</span><span class="o">.</span><span class="n">compute_rnmf</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span><span class="n">rank</span> <span class="o">=</span> <span class="n">K</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="n">niter</span><span class="p">,</span> 
+                                   <span class="n">oversample</span><span class="o">=</span><span class="n">oversample</span><span class="p">)</span>
 <span class="n">runtime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;runtime: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">runtime</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;loss: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nmf</span><span class="o">.</span><span class="n">cost</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">W_rnmf</span><span class="p">,</span><span class="n">H_rnmf</span><span class="p">)))</span>
@@ -11928,8 +11942,8 @@ loss: 738505818.5604401
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>rnmf
-runtime: 8.516527891159058
+<pre>rnmf iter=200; oversample=20
+runtime: 8.7084059715271
 loss: 738516117.0531319
 </pre>
 </div>
@@ -11944,9 +11958,12 @@ loss: 738516117.0531319
 <div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;rnmf2&quot;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">niter</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">oversample</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;rnmf2 iter=</span><span class="si">{}</span><span class="s2">; oversample=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">niter</span><span class="p">,</span> <span class="n">oversample</span><span class="p">))</span>
 <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="p">(</span><span class="n">W_rnmf2</span><span class="p">,</span><span class="n">H_rnmf2</span><span class="p">)</span> <span class="o">=</span> <span class="n">nmf</span><span class="o">.</span><span class="n">compute_rnmf2</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span><span class="n">rank</span> <span class="o">=</span> <span class="n">K</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span><span class="n">oversample</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="p">(</span><span class="n">W_rnmf2</span><span class="p">,</span><span class="n">H_rnmf2</span><span class="p">)</span> <span class="o">=</span> <span class="n">nmf</span><span class="o">.</span><span class="n">compute_rnmf2</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span><span class="n">rank</span> <span class="o">=</span> <span class="n">K</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="n">niter</span><span class="p">,</span>
+                                      <span class="n">oversample</span><span class="o">=</span><span class="n">oversample</span><span class="p">)</span>
 <span class="n">runtime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;runtime: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">runtime</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;loss: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nmf</span><span class="o">.</span><span class="n">cost</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">W_rnmf2</span><span class="p">,</span><span class="n">H_rnmf2</span><span class="p">)))</span>
@@ -11966,9 +11983,109 @@ loss: 738516117.0531319
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>rnmf2
-runtime: 11.374766826629639
-loss: 738689006.4422762
+<pre>rnmf2 iter=200; oversample=20
+runtime: 8.519758939743042
+loss: 738564922.0021844
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Comment:">Comment:<a class="anchor-link" href="#Comment:">&#182;</a></h3><p>Seems that with the same number of iterations, <code>rnmf2</code> gets worse loss than <code>rnmf</code>. Let's see if it can beat <code>rnmf</code> if running more iterations.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">niter</span> <span class="o">=</span> <span class="mi">2000</span>
+<span class="n">oversample</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;rnmf2 iter=</span><span class="si">{}</span><span class="s2">; oversample=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">niter</span><span class="p">,</span> <span class="n">oversample</span><span class="p">))</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="p">(</span><span class="n">W_rnmf2</span><span class="p">,</span><span class="n">H_rnmf2</span><span class="p">)</span> <span class="o">=</span> <span class="n">nmf</span><span class="o">.</span><span class="n">compute_rnmf2</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span><span class="n">rank</span> <span class="o">=</span> <span class="n">K</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="n">niter</span><span class="p">,</span>
+                                      <span class="n">oversample</span><span class="o">=</span><span class="n">oversample</span><span class="p">)</span>
+<span class="n">runtime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;runtime: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">runtime</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;loss: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nmf</span><span class="o">.</span><span class="n">cost</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">W_rnmf2</span><span class="p">,</span><span class="n">H_rnmf2</span><span class="p">)))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>rnmf2 iter=2000; oversample=20
+runtime: 11.734492778778076
+loss: 738471982.7025383
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Comment:">Comment:<a class="anchor-link" href="#Comment:">&#182;</a></h3><p>Finally, <code>rnmf2</code> (2000 iter) beats <code>rnmf</code> (200 iter). See how <code>rnmf</code> does with 2000 iters.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">niter</span> <span class="o">=</span> <span class="mi">2000</span>
+<span class="n">oversample</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;rnmf iter=</span><span class="si">{}</span><span class="s2">; oversample=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">niter</span><span class="p">,</span> <span class="n">oversample</span><span class="p">))</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="p">(</span><span class="n">W_rnmf</span><span class="p">,</span><span class="n">H_rnmf</span><span class="p">)</span> <span class="o">=</span> <span class="n">nmf</span><span class="o">.</span><span class="n">compute_rnmf</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span><span class="n">rank</span> <span class="o">=</span> <span class="n">K</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="n">niter</span><span class="p">,</span> 
+                                   <span class="n">oversample</span><span class="o">=</span><span class="n">oversample</span><span class="p">)</span>
+<span class="n">runtime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;runtime: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">runtime</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;loss: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nmf</span><span class="o">.</span><span class="n">cost</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">W_rnmf</span><span class="p">,</span><span class="n">H_rnmf</span><span class="p">)))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>rnmf iter=2000; oversample=20
+runtime: 12.284909009933472
+loss: 738472892.3136823
 </pre>
 </div>
 </div>
