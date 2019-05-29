@@ -382,18 +382,39 @@ def cost(A, W,H):
 
 ## HALS update using low rank approximation of data A
 ## QB \approx A
-def hals_lr_naive(Q,B, W, H, j):
-	## update W
-	addW = (Q.dot(B.dot(H.T))[:,j] - (W.dot(H.dot(H.T)))[:,j])/(H.dot(H.T))[j,j]
-	W[:,j] += addW
-	W[:,j] = W[:,j].clip(min = 0)
+# def hals_lr_naive(Q,B, W, H, j):
+# 	## update W
+# 	addW = (Q.dot(B.dot(H.T))[:,j] - (W.dot(H.dot(H.T)))[:,j])/(H.dot(H.T))[j,j]
+# 	W[:,j] += addW
+# 	W[:,j] = W[:,j].clip(min = 0)
 	
+# 	## update H
+# 	addH = (B.T.dot(Q.T.dot(W))[:,j] - H.T.dot(W.T.dot(W))[:,j])/(W.T.dot(W))[j,j]
+# 	H[j,:] += addH
+# 	H[j,:] += addH
+# 	H[j,:]  = H[j,:].clip(min = 0)
+# 	return W, H
+
+def hals_lr_fast(Q,B,W,Ht,j):
+	## update W
+	h = Ht[:,j]
+	XHt_j = Q.dot(B.dot(h))
+	HHt_j = Ht.T.dot(h)
+	WHHt_j = W.dot(HHt_j)
+	HHt_jj = HHt_j[j]
+	W[:,j] += (XHt_j - WHHt_j)/HHt_jj
+	W[:,j] = W[:,j].clip(min = 0)
+
 	## update H
-	addH = (B.T.dot(Q.T.dot(W))[:,j] - H.T.dot(W.T.dot(W))[:,j])/(W.T.dot(W))[j,j]
-	H[j,:] += addH
-	H[j,:] += addH
-	H[j,:]  = H[j,:].clip(min = 0)
-	return W, H
+	w = W[:,j]
+	WtX_j = B.T.dot(Q.T.dot(w))
+	WtW_j = W.T.dot(w)
+	WtWHt_j = Ht.dot(WtW_j)
+	WtW_jj = WtW_j[j]
+	Ht[:,j] += (WtX_j - WtWHt_j)/WtW_jj
+	Ht[:,j] = Ht[:,j].clip(min = 0)
+
+	return W, Ht
 
 ## compute nmf using randomized projection + hals
 def compute_rnmf2(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=False,
@@ -424,17 +445,19 @@ def compute_rnmf2(A, rank, oversample=20, n_subspace=2, init='nndsvd', shuffle=F
 
 	#  Initialization methods for factor matrices W and H
 	W, H = _initialize_nmf(A, rank, init=init, eps=1e-6, random_state=random_state)
+	Ht = np.array(H.T, order='C')
 	del A
 
 	#  Iterate the HALS algorithm until maxiter is reached
 	for niter in range(maxiter):
 		for j in range(W.shape[1]):
-			W, H = hals_lr_naive(Q, B, W, H, j)
+			# W, H = hals_lr_naive(Q, B, W, H, j)
+			W, Ht = hals_lr_fast(Q, B, W, Ht, j)
 
 	# Return factor matrices
 	if flipped:
-		return H.T, W.T
-	return W, H
+		return Ht, W.T
+	return W, Ht.T
 
 
 
